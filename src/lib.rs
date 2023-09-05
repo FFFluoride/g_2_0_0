@@ -1,10 +1,10 @@
-pub use std::ops::{Mul, MulAssign, Neg, Sub};
+use std::ops::{Mul, MulAssign, Neg, Sub};
 
-pub use std::cmp::PartialOrd;
+use std::cmp::PartialOrd;
 
-pub use num_traits::{identities::One, Zero};
+use num_traits::{identities::One, Zero};
 
-#[derive(Clone, Debug, Copy)]
+#[derive(Clone, Debug, Copy, PartialEq, PartialOrd, Hash, Eq, Ord)]
 pub struct MultiVector<S> {
     pub scalar: S,
     pub e1: S,
