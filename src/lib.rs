@@ -257,11 +257,18 @@ pub trait New<A> {
     fn new(arg: A) -> Self;
 }
 
-pub fn exp<F, N>(theta: Angle<N, Radians>) -> MultiVector<N>
+pub fn exp<F, S>(theta: Angle<F, Radians>) -> MultiVector<S>
 where
     F: Float,
-    N: Float + MulAssign + One + Zero + PartialOrd<isize> + New<N>,
+    S: MulAssign
+        + Mul<Output = S>
+        + Neg<Output = S>
+        + Copy
+        + Zero
+        + Sub<Output = S>
+        + One
+        + PartialOrd<isize> + New<F>,
 {
     let (sin, cos) = theta.sin_cos();
-    MultiVector::<N>::new(N::new(sin), N::zero(), N::zero(), N::new(cos))
+    MultiVector::<S>::new(S::new(sin), S::zero(), S::zero(), S::new(cos))
 }
