@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 description = "A library to manipulate arbitrary object in the geometric algebra containing two perpendicular vectors that square to 1. Basically 2d VGA"
 license = "GPL-3.0"
-keywords = ["math", "maths", "ga", "geometric algebra", "2d"]
+keywords = ["math", "maths", "ga", "geometric_algebra", "2d"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
