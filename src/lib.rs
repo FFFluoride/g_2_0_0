@@ -2,23 +2,36 @@ pub use std::ops::{Mul, MulAssign, Neg, Sub};
 
 pub use std::cmp::PartialOrd;
 
-pub use num_traits::{
-    Zero,
-    identities::One,
-};
+pub use num_traits::{identities::One, Zero};
 
 #[derive(Clone)]
 pub struct MultiVector<S> {
-    scalar: S,
-    e1: S,
-    e2: S,
-    e12: S,
+    pub scalar: S,
+    pub e1: S,
+    pub e2: S,
+    pub e12: S,
 }
 
 impl<S> MultiVector<S>
 where
-    S: MulAssign + Mul<Output = S> + Neg<Output = S> + Copy + Zero + Sub<Output = S> + One + PartialOrd<isize>,
+    S: MulAssign
+        + Mul<Output = S>
+        + Neg<Output = S>
+        + Copy
+        + Zero
+        + Sub<Output = S>
+        + One
+        + PartialOrd<isize>,
 {
+    pub fn new(scalar: S, e1: S, e2: S, e12: S) -> Self {
+        Self {
+            scalar,
+            e1,
+            e2,
+            e12,
+        }
+    }
+
     pub fn scale(self, scalar: S) -> Self {
         Self {
             scalar: self.scalar * scalar,
@@ -131,77 +144,109 @@ where
         self.e12 = (self.e1 * rhs.e2) - (self.e2 * rhs.e1);
     }
     pub fn geometric_division(mut self, rhs: Self) -> Self {
-	self.scalar = self.scalar.neg();
-	self.scale_mut((self.scalar * self.scalar) + (self.e1 * self.e1) + (self.e2 * self.e2) - (self.e12 * self.e12));
-	self.geometric_product(rhs)
+        self.scalar = self.scalar.neg();
+        self.scale_mut(
+            (self.scalar * self.scalar) + (self.e1 * self.e1) + (self.e2 * self.e2)
+                - (self.e12 * self.e12),
+        );
+        self.geometric_product(rhs)
     }
     pub fn geometric_division_mut(&mut self, rhs: Self) {
-	self.scalar = self.scalar.neg();
-	self.scale_mut((self.scalar * self.scalar) + (self.e1 * self.e1) + (self.e2 * self.e2) - (self.e12 * self.e12));
-	self.geometric_product_mut(rhs);
+        self.scalar = self.scalar.neg();
+        self.scale_mut(
+            (self.scalar * self.scalar) + (self.e1 * self.e1) + (self.e2 * self.e2)
+                - (self.e12 * self.e12),
+        );
+        self.geometric_product_mut(rhs);
     }
 
     pub fn geometric_division_left(self, mut rhs: Self) -> Self {
-	rhs.scalar = rhs.scalar.neg();
-	rhs.scale_mut((rhs.scalar * rhs.scalar) + (rhs.e1 * rhs.e1) + (rhs.e2 * rhs.e2) - (self.e12 * self.e12));
-	rhs.geometric_product(self)
+        rhs.scalar = rhs.scalar.neg();
+        rhs.scale_mut(
+            (rhs.scalar * rhs.scalar) + (rhs.e1 * rhs.e1) + (rhs.e2 * rhs.e2)
+                - (self.e12 * self.e12),
+        );
+        rhs.geometric_product(self)
     }
 
     pub fn geometric_division_left_mut(self, rhs: &mut Self) {
-	rhs.scalar = rhs.scalar.neg();
-	rhs.scale_mut((rhs.scalar * rhs.scalar) + (rhs.e1 * rhs.e1) + (rhs.e2 * rhs.e2) - (self.e12 * self.e12));
-	rhs.geometric_product_mut(self)
+        rhs.scalar = rhs.scalar.neg();
+        rhs.scale_mut(
+            (rhs.scalar * rhs.scalar) + (rhs.e1 * rhs.e1) + (rhs.e2 * rhs.e2)
+                - (self.e12 * self.e12),
+        );
+        rhs.geometric_product_mut(self)
     }
-    
+
     pub fn dual(self) -> Self {
-	let ps = Self { scalar: S::zero(), e1: S::zero(), e2: S::zero(), e12: S::one() };
-	ps.geometric_division(self)
+        let ps = Self {
+            scalar: S::zero(),
+            e1: S::zero(),
+            e2: S::zero(),
+            e12: S::one(),
+        };
+        ps.geometric_division(self)
     }
     pub fn dual_mut(&mut self) {
-	let ps = Self { scalar: S::zero(), e1: S::zero(), e2: S::zero(), e12: S::one() };
-	ps.geometric_division_left_mut(self);
+        let ps = Self {
+            scalar: S::zero(),
+            e1: S::zero(),
+            e2: S::zero(),
+            e12: S::one(),
+        };
+        ps.geometric_division_left_mut(self);
     }
     pub fn inverse_dual(self) -> Self {
-	let ps = Self { scalar: S::zero(), e1: S::zero(), e2: S::zero(), e12: S::one() };
-	ps.geometric_division(self)
+        let ps = Self {
+            scalar: S::zero(),
+            e1: S::zero(),
+            e2: S::zero(),
+            e12: S::one(),
+        };
+        ps.geometric_division(self)
     }
     pub fn inverse_dual_mut(&mut self) {
-	let ps = Self { scalar: S::zero(), e1: S::zero(), e2: S::zero(), e12: S::one() };
-	ps.geometric_division_left_mut(self)
+        let ps = Self {
+            scalar: S::zero(),
+            e1: S::zero(),
+            e2: S::zero(),
+            e12: S::one(),
+        };
+        ps.geometric_division_left_mut(self)
     }
     pub fn grade(&self) -> usize {
-	let mut grade = 0;
-	if self.e1 > 0 || self.e2 > 0 {
-	    grade += 1;
-	}
-	if self.e2 > 0 {
-	    grade += 1;
-	}
-	grade
+        let mut grade = 0;
+        if self.e1 > 0 || self.e2 > 0 {
+            grade += 1;
+        }
+        if self.e2 > 0 {
+            grade += 1;
+        }
+        grade
     }
     pub fn outer_product(self, rhs: Self) -> Self {
-	let grade1 = self.grade();
-	let grade2 = rhs.grade();
-	self.geometric_product(rhs).project(grade1 + grade2)
+        let grade1 = self.grade();
+        let grade2 = rhs.grade();
+        self.geometric_product(rhs).project(grade1 + grade2)
     }
     pub fn outer_product_mut(&mut self, rhs: Self) {
-	let grade1 = self.grade();
-	let grade2 = rhs.grade();
-	self.geometric_product_mut(rhs);
-	self.project_mut(grade1 + grade2)
+        let grade1 = self.grade();
+        let grade2 = rhs.grade();
+        self.geometric_product_mut(rhs);
+        self.project_mut(grade1 + grade2)
     }
     pub fn inner_product(self, rhs: Self) -> Self {
-	let grade1 = self.grade();
-	let grade2 = rhs.grade();
-	self.geometric_product(rhs).project(grade1.abs_diff(grade2))
+        let grade1 = self.grade();
+        let grade2 = rhs.grade();
+        self.geometric_product(rhs).project(grade1.abs_diff(grade2))
     }
     pub fn inner_product_mut(&mut self, rhs: Self) {
-	let grade1 = self.grade();
-	let grade2 = rhs.grade();
-	self.geometric_product_mut(rhs);
-	self.project_mut(grade1.abs_diff(grade2))
+        let grade1 = self.grade();
+        let grade2 = rhs.grade();
+        self.geometric_product_mut(rhs);
+        self.project_mut(grade1.abs_diff(grade2))
     }
     pub fn magnitude_squared(self) -> S {
-	self.clone().geometric_product(self.reverse()).scalar
+        self.clone().geometric_product(self.reverse()).scalar
     }
 }
