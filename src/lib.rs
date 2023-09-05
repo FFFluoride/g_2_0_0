@@ -4,7 +4,7 @@ pub use std::cmp::PartialOrd;
 
 pub use num_traits::{identities::One, Zero};
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Copy)]
 pub struct MultiVector<S> {
     pub scalar: S,
     pub e1: S,
