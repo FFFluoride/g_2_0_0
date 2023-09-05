@@ -4,6 +4,8 @@ use std::cmp::PartialOrd;
 
 use num_traits::{identities::One, Zero};
 
+use radians::{Angle, Float, Radians};
+
 #[derive(Clone, Debug, Copy, PartialEq, PartialOrd, Hash, Eq, Ord)]
 pub struct MultiVector<S> {
     pub scalar: S,
@@ -247,6 +249,19 @@ where
         self.project_mut(grade1.abs_diff(grade2))
     }
     pub fn magnitude_squared(self) -> S {
-        self.clone().geometric_product(self.reverse()).scalar
+        self.geometric_product(self.reverse()).scalar
     }
+}
+
+pub trait New<A> {
+    fn new(arg: A) -> Self;
+}
+
+pub fn exp<F, N>(theta: Angle<N, Radians>) -> MultiVector<N>
+where
+    F: Float,
+    N: Float + MulAssign + One + Zero + PartialOrd<isize> + New<N>,
+{
+    let (sin, cos) = theta.sin_cos();
+    MultiVector::<N>::new(N::new(sin), N::zero(), N::zero(), N::new(cos))
 }
