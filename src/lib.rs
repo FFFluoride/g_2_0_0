@@ -280,5 +280,5 @@ where
         + PartialOrd<isize> + New<F>,
 {
     let (sin, cos) = theta.sin_cos();
-    MultiVector::<S>::new(S::new(sin), S::zero(), S::zero(), S::new(cos))
+    MultiVector::<S>::new(S::new(cos), S::zero(), S::zero(), S::new(sin))
 }
