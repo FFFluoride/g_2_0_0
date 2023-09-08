@@ -126,24 +126,34 @@ where
         self.e12 = self.e12.neg()
     }
     pub fn geometric_product(self, rhs: Self) -> Self {
+	let a = self.scalar;
+	let b = self.e1;
+	let c = self.e2;
+	let d = self.e12;
+	let e = rhs.scalar;
+	let f = rhs.e1;
+	let g = rhs.e2;
+	let h = rhs.e12;
         Self {
-            scalar: (self.scalar * rhs.scalar) + (self.e1 * rhs.e1) + (self.e2 * rhs.e2)
-                - (self.e12 * rhs.e12),
-            e1: (self.scalar * rhs.e1) + (self.e1 * rhs.scalar) + (self.e12 * rhs.e2)
-                - (self.e2 * rhs.e12),
-            e2: (self.scalar * rhs.e2) + (self.e2 * rhs.scalar) + (self.e1 * rhs.e12)
-                - (self.e12 * rhs.e1),
-            e12: (self.e1 * rhs.e2) - (self.e2 * rhs.e1),
+            scalar: (a * e) + (b * f) + (c * g) - (d * h),
+            e1: (a * f) + (b * e) + (d * g) - (c * h),
+            e2: (a * g) + (c * e) + (b * h) - (d * f),
+            e12: (a * h) + (b * g) + (d * e) - (c * f),
         }
     }
     pub fn geometric_product_mut(&mut self, rhs: Self) {
-        self.scalar = (self.scalar * rhs.scalar) + (self.e1 * rhs.e1) + (self.e2 * rhs.e2)
-            - (self.e12 * rhs.e12);
-        self.e1 = (self.scalar * rhs.e1) + (self.e1 * rhs.scalar) + (self.e12 * rhs.e2)
-            - (self.e2 * rhs.e12);
-        self.e2 = (self.scalar * rhs.e2) + (self.e2 * rhs.scalar) + (self.e1 * rhs.e12)
-            - (self.e12 * rhs.e1);
-        self.e12 = (self.e1 * rhs.e2) - (self.e2 * rhs.e1);
+	let a = self.scalar;
+	let b = self.e1;
+	let c = self.e2;
+	let d = self.e12;
+	let e = rhs.scalar;
+	let f = rhs.e1;
+	let g = rhs.e2;
+	let h = rhs.e12;
+        self.scalar = (a * e) + (b * f) + (c * g) - (d * h);
+        self.e1 = (a * f) + (b * e) + (d * g) - (c * h);
+        self.e2 = (a * g) + (c * e) + (b * h) - (d * f);
+        self.e12 = (a * h) + (b * g) + (d * e) - (c * f);
     }
     pub fn geometric_division(mut self, rhs: Self) -> Self {
         self.scalar = self.scalar.neg();
