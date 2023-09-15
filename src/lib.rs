@@ -23,7 +23,7 @@ where
         + Zero
         + Sub<Output = S>
         + One
-        + From<i32>
+        + From<i16>
         + PartialOrd,
 {
     pub fn new(scalar: S, e1: S, e2: S, e12: S) -> Self {
@@ -275,7 +275,7 @@ where
         + Sub<Output = S>
         + One
         + From<F>
-        + From<i32>
+        + From<i16>
         + PartialOrd,
 {
     let (sin, cos) = theta.sin_cos();
