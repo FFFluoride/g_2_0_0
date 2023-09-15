@@ -23,7 +23,8 @@ where
         + Zero
         + Sub<Output = S>
         + One
-        + PartialOrd<isize>,
+        + From<isize>
+        + PartialOrd,
 {
     pub fn new(scalar: S, e1: S, e2: S, e12: S) -> Self {
         Self {
@@ -126,14 +127,14 @@ where
         self.e12 = self.e12.neg()
     }
     pub fn geometric_product(self, rhs: Self) -> Self {
-	let a = self.scalar;
-	let b = self.e1;
-	let c = self.e2;
-	let d = self.e12;
-	let e = rhs.scalar;
-	let f = rhs.e1;
-	let g = rhs.e2;
-	let h = rhs.e12;
+        let a = self.scalar;
+        let b = self.e1;
+        let c = self.e2;
+        let d = self.e12;
+        let e = rhs.scalar;
+        let f = rhs.e1;
+        let g = rhs.e2;
+        let h = rhs.e12;
         Self {
             scalar: (a * e) + (b * f) + (c * g) - (d * h),
             e1: (a * f) + (b * e) + (d * g) - (c * h),
@@ -142,14 +143,14 @@ where
         }
     }
     pub fn geometric_product_mut(&mut self, rhs: Self) {
-	let a = self.scalar;
-	let b = self.e1;
-	let c = self.e2;
-	let d = self.e12;
-	let e = rhs.scalar;
-	let f = rhs.e1;
-	let g = rhs.e2;
-	let h = rhs.e12;
+        let a = self.scalar;
+        let b = self.e1;
+        let c = self.e2;
+        let d = self.e12;
+        let e = rhs.scalar;
+        let f = rhs.e1;
+        let g = rhs.e2;
+        let h = rhs.e12;
         self.scalar = (a * e) + (b * f) + (c * g) - (d * h);
         self.e1 = (a * f) + (b * e) + (d * g) - (c * h);
         self.e2 = (a * g) + (c * e) + (b * h) - (d * f);
@@ -228,10 +229,10 @@ where
     }
     pub fn grade(&self) -> usize {
         let mut grade = 0;
-        if self.e1 > 0 || self.e2 > 0 {
+        if self.e1 > 0.into() || self.e2 > 0.into() {
             grade += 1;
         }
-        if self.e2 > 0 {
+        if self.e2 > 0.into() {
             grade += 1;
         }
         grade
@@ -263,10 +264,6 @@ where
     }
 }
 
-pub trait New<A> {
-    fn new(arg: A) -> Self;
-}
-
 pub fn exp<F, S>(theta: Angle<F, Radians>) -> MultiVector<S>
 where
     F: Float,
@@ -277,8 +274,10 @@ where
         + Zero
         + Sub<Output = S>
         + One
-        + PartialOrd<isize> + New<F>,
+        + From<F>
+        + From<isize>
+        + PartialOrd,
 {
     let (sin, cos) = theta.sin_cos();
-    MultiVector::<S>::new(S::new(cos), S::zero(), S::zero(), S::new(sin))
+    MultiVector::<S>::new(cos.into(), S::zero(), S::zero(), sin.into())
 }
