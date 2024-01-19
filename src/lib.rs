@@ -281,3 +281,50 @@ where
     let (sin, cos) = theta.sin_cos();
     MultiVector::<S>::new(cos.into(), S::zero(), S::zero(), sin.into())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::MultiVector;
+    use rand::prelude::*;
+
+    fn rand_mvec() -> MultiVector<f32> {
+        let mut rng = thread_rng();
+        MultiVector {
+            scalar: rng.gen(),
+            e1: rng.gen(),
+            e2: rng.gen(),
+            e12: rng.gen(),
+        }
+    }
+
+    #[test]
+    fn reverse_twice() {
+        let m = rand_mvec();
+        assert_eq!(m, m.reverse().reverse());
+    }
+
+    #[test]
+    fn outer_product_anticommutes() {
+        let u = rand_mvec();
+        let v = rand_mvec();
+        assert_eq!(u.outer_product(v), v.outer_product(u).scale(-1f32));
+    }
+
+    #[test]
+    fn inner_product_commutes() {
+	let u = rand_mvec();
+	let v = rand_mvec();
+	assert_eq!(u.inner_product(v), v.inner_product(u));
+    }
+
+    #[test]
+    fn inner_equals_inner_mut() {
+	let u = rand_mvec();
+	let v = rand_mvec();
+	let mut u_clone = u.clone();
+	let mut v_clone = v.clone();
+	u_clone.inner_product_mut(v);
+	v_clone.inner_product_mut(u);
+	assert_eq!(u_clone, v_clone);
+    }
+}
