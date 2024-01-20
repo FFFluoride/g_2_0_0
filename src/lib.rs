@@ -232,7 +232,7 @@ where
             e2: S::zero(),
             e12: S::one(),
         };
-        ps.geometric_division(self)
+        ps.geometric_division_left(self)
     }
     pub fn dual_mut(&mut self) {
         let ps = Self {
@@ -251,7 +251,7 @@ where
             e2: S::zero(),
             e12: S::one(),
         };
-        ps.geometric_division(self)
+        ps.geometric_division_left(self)
     }
     pub fn inverse_dual_mut(&mut self) {
         let ps = Self {
@@ -388,6 +388,68 @@ mod tests {
 	    u_clone.geometric_product_mut(v);
 	    assert_eq!(u.geometric_product(v), u_clone);
 	}
+
+	#[test]
+	fn geometric_division_test() {
+	    let u = rand_mvec();
+	    let mut u_clone = u.clone();
+	    
+	    let v = rand_mvec();
+
+	    u_clone.geometric_division_mut(v);
+	    assert_eq!(u.geometric_division(v), u_clone);
+	}
+
+	#[test]
+	fn geometric_division_left_test() {
+	    let u = rand_mvec();
+	    let mut u_clone = u.clone();
+	    
+	    let v = rand_mvec();
+
+	    v.geometric_division_left_mut(&mut u_clone);
+	    assert_eq!(v.geometric_division_left(u), u_clone);
+	}
+
+	#[test]
+	fn dual_test() {
+	    let u = rand_mvec();
+	    let mut u_clone = u.clone();
+	    
+	    u_clone.dual_mut();
+	    assert_eq!(u.dual(), u_clone);
+	}
+
+	#[test]
+	fn inverse_dual_test() {
+	    let u = rand_mvec();
+	    let mut u_clone = u.clone();
+	    
+	    u_clone.inverse_dual_mut();
+	    assert_eq!(u.inverse_dual(), u_clone);
+	}
+
+	#[test]
+	fn outer_product_test() {
+	    let u = rand_mvec();
+	    let mut u_clone = u.clone();
+	    
+	    let v = rand_mvec();
+
+	    u_clone.outer_product_mut(v);
+	    assert_eq!(u.outer_product(v), u_clone);
+	}
+
+	#[test]
+	fn inner_product_test() {
+	    let u = rand_mvec();
+	    let mut u_clone = u.clone();
+	    
+	    let v = rand_mvec();
+
+	    u_clone.inner_product_mut(v);
+	    assert_eq!(u.inner_product(v), u_clone);
+	}
     }
 
 
@@ -426,5 +488,11 @@ mod tests {
             v_clone.inner_product_mut(u);
             assert_eq!(u_clone, v_clone);
         }
+	/*
+	#[test]
+	fn dual_inverse_dual_is_original() {
+	    let u = rand_mvec();
+	    assert_eq!(u.dual().inverse_dual(), u);
+	}*/
     }
 }
