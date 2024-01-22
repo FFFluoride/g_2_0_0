@@ -1,7 +1,7 @@
 //! Library made for ppputilising geometric algebra with only two basis vectors each squaring to 1.
 
 use std::ops::Add;
-use std::ops::{Mul, MulAssign, Neg, Sub};
+use std::ops::{Div, Mul, MulAssign, Neg, Sub};
 
 use std::cmp::PartialOrd;
 
@@ -50,12 +50,28 @@ where
     }
 }
 
+impl<S> Sub for MultiVector<S>
+where
+    S: Sub<Output = S>,
+{
+    type Output = Self;
+    fn sub(self, rhs: Self) -> Self::Output {
+        Self {
+            scalar: self.scalar - rhs.scalar,
+            e1: self.e1 - rhs.e1,
+            e2: self.e2 - rhs.e2,
+            e12: self.e12 - rhs.e12,
+        }
+    }
+}
+
 /// Most of these functions have an in place mutation counterpart, they have "_mut" at the end of it
 impl<S> MultiVector<S>
 where
     S: MulAssign
         + Mul<Output = S>
         + Neg<Output = S>
+        + Div<Output = S>
         + Copy
         + Zero
         + Sub<Output = S>
@@ -69,6 +85,15 @@ where
             e1,
             e2,
             e12,
+        }
+    }
+
+    pub fn ps() -> Self {
+        Self {
+            scalar: 0.into(),
+            e1: 0.into(),
+            e2: 0.into(),
+            e12: 1.into(),
         }
     }
 
@@ -154,7 +179,7 @@ where
         }
     }
     pub fn reverse_mut(&mut self) {
-        self.e12 = self.e12.neg()
+        self.e12 = -self.e12
     }
 
     /// The Geometric product is distributive across addittion and is defined as: uv = 1/2(u.v + u^v). If you apply this rule and several others, in two dimensions, you get this formula for calculating the geometric product for arbitrary Multivectors in two dimensions. The Geometric product for vectors is particularly nice as it commutes when the vectors are parallel and anticommutes if they are perpendicular (this is more useful theoretically)
@@ -183,85 +208,14 @@ where
         let f = rhs.e1;
         let g = rhs.e2;
         let h = rhs.e12;
-	*self = Self {
+        *self = Self {
             scalar: (a * e) + (b * f) + (c * g) - (d * h),
             e1: (a * f) + (b * e) - (c * h) + (d * g),
             e2: (a * g) + (b * h) + (c * e) - (d * f),
             e12: (a * h) + (b * g) - (c * f) + (d * e),
         }
     }
-    /// This is the geometic product where you multiply on the right and divide by the the magnitude squared of rhs
-    pub fn geometric_division(mut self, rhs: Self) -> Self {
-        self.scalar = self.scalar.neg();
-        self.scale_mut(
-            (self.scalar * self.scalar) + (self.e1 * self.e1) + (self.e2 * self.e2)
-                - (self.e12 * self.e12),
-        );
-        self.geometric_product(rhs)
-    }
-    pub fn geometric_division_mut(&mut self, rhs: Self) {
-        self.scalar = self.scalar.neg();
-        self.scale_mut(
-            (self.scalar * self.scalar) + (self.e1 * self.e1) + (self.e2 * self.e2)
-                - (self.e12 * self.e12),
-        );
-        self.geometric_product_mut(rhs);
-    }
-    /// Multiply by rhs on the left instead of right then account for coefficient
-    pub fn geometric_division_left(self, mut rhs: Self) -> Self {
-        rhs.scalar = rhs.scalar.neg();
-        rhs.scale_mut(
-            (rhs.scalar * rhs.scalar) + (rhs.e1 * rhs.e1) + (rhs.e2 * rhs.e2)
-                - (self.e12 * self.e12),
-        );
-        rhs.geometric_product(self)
-    }
-    pub fn geometric_division_left_mut(self, rhs: &mut Self) {
-        rhs.scalar = rhs.scalar.neg();
-        rhs.scale_mut(
-            (rhs.scalar * rhs.scalar) + (rhs.e1 * rhs.e1) + (rhs.e2 * rhs.e2)
-                - (self.e12 * self.e12),
-        );
-        rhs.geometric_product_mut(self)
-    }
-    /// The dual multiplied by the the original gives the psuedoscalar. Therefore simply do geometric division by the psuedoscalar
-    pub fn dual(self) -> Self {
-        let ps = Self {
-            scalar: S::zero(),
-            e1: S::zero(),
-            e2: S::zero(),
-            e12: S::one(),
-        };
-        ps.geometric_division_left(self)
-    }
-    pub fn dual_mut(&mut self) {
-        let ps = Self {
-            scalar: S::zero(),
-            e1: S::zero(),
-            e2: S::zero(),
-            e12: S::one(),
-        };
-        ps.geometric_division_left_mut(self);
-    }
-    /// Acquiring what multiplies by the input multivector to produce the psuedoscalar. Theoretically self.dual().inverse() = self
-    pub fn inverse_dual(self) -> Self {
-        let ps = Self {
-            scalar: S::zero(),
-            e1: S::zero(),
-            e2: S::zero(),
-            e12: S::one(),
-        };
-        ps.geometric_division_left(self)
-    }
-    pub fn inverse_dual_mut(&mut self) {
-        let ps = Self {
-            scalar: S::zero(),
-            e1: S::zero(),
-            e2: S::zero(),
-            e12: S::one(),
-        };
-        ps.geometric_division_left_mut(self)
-    }
+
     /// Gets the maximum grade element that =/= 0. There may be some imprecise floating point errors
     pub fn grade(&self) -> usize {
         let mut grade = 0;
@@ -310,6 +264,7 @@ where
     S: MulAssign
         + Mul<Output = S>
         + Neg<Output = S>
+        + Div<Output = S>
         + Copy
         + Zero
         + Sub<Output = S>
@@ -339,119 +294,78 @@ mod tests {
     /// Testing for parity between the mut and non-mut versions of functions
     #[cfg(test)]
     mod parity {
-	use super::rand_mvec;
-	use rand::prelude::*;
-	 
+        use super::rand_mvec;
+        use rand::prelude::*;
+
         #[test]
         fn scale_test() {
-	    let m = rand_mvec();
-	    let mut m_clone = m.clone();
-	    
-	    let mut rng = thread_rng();
-	    let scalar: f32 = rng.gen();
-	    
-	    m_clone.scale_mut(scalar);
-	    assert_eq!(m.scale(scalar), m_clone)
-	}
+            let m = rand_mvec();
+            let mut m_clone = m.clone();
 
-	#[test]
-	fn project_test() {
-	    for scalar in 0..2 {
-		let m = rand_mvec();
-		let mut m_clone = m.clone();
-		
-		m_clone.project_mut(scalar);
-		assert_eq!(m.project(scalar), m_clone);
-	    }
-	    let scalar: usize = thread_rng().gen();
-	    let m = rand_mvec();
-	    let mut m_clone = m.clone();
-	    m_clone.project_mut(scalar);
-	    assert_eq!(m.project(scalar), m_clone);
-	}
+            let mut rng = thread_rng();
+            let scalar: f32 = rng.gen();
 
-	#[test]
-	fn reverse_test() {
-	    let m = rand_mvec();
-	    let mut m_clone = m.clone();
-	    m_clone.reverse_mut();
-	    assert_eq!(m.reverse(), m_clone);
-	}
+            m_clone.scale_mut(scalar);
+            assert_eq!(m.scale(scalar), m_clone)
+        }
 
-	#[test]
-	fn geometric_product_test() {
-	    let u = rand_mvec();
-	    let mut u_clone = u.clone();
-	    
-	    let v = rand_mvec();
+        #[test]
+        fn project_test() {
+            for scalar in 0..2 {
+                let m = rand_mvec();
+                let mut m_clone = m.clone();
 
-	    u_clone.geometric_product_mut(v);
-	    assert_eq!(u.geometric_product(v), u_clone);
-	}
+                m_clone.project_mut(scalar);
+                assert_eq!(m.project(scalar), m_clone);
+            }
+            let scalar: usize = thread_rng().gen();
+            let m = rand_mvec();
+            let mut m_clone = m.clone();
+            m_clone.project_mut(scalar);
+            assert_eq!(m.project(scalar), m_clone);
+        }
 
-	#[test]
-	fn geometric_division_test() {
-	    let u = rand_mvec();
-	    let mut u_clone = u.clone();
-	    
-	    let v = rand_mvec();
+        #[test]
+        fn reverse_test() {
+            let m = rand_mvec();
+            let mut m_clone = m.clone();
+            m_clone.reverse_mut();
+            assert_eq!(m.reverse(), m_clone);
+        }
 
-	    u_clone.geometric_division_mut(v);
-	    assert_eq!(u.geometric_division(v), u_clone);
-	}
+        #[test]
+        fn geometric_product_test() {
+            let u = rand_mvec();
+            let mut u_clone = u.clone();
 
-	#[test]
-	fn geometric_division_left_test() {
-	    let u = rand_mvec();
-	    let mut u_clone = u.clone();
-	    
-	    let v = rand_mvec();
+            let v = rand_mvec();
 
-	    v.geometric_division_left_mut(&mut u_clone);
-	    assert_eq!(v.geometric_division_left(u), u_clone);
-	}
+            u_clone.geometric_product_mut(v);
+            assert_eq!(u.geometric_product(v), u_clone);
+        }
 
-	#[test]
-	fn dual_test() {
-	    let u = rand_mvec();
-	    let mut u_clone = u.clone();
-	    
-	    u_clone.dual_mut();
-	    assert_eq!(u.dual(), u_clone);
-	}
+        #[test]
+        fn outer_product_test() {
+            let u = rand_mvec();
+            let mut u_clone = u.clone();
 
-	#[test]
-	fn inverse_dual_test() {
-	    let u = rand_mvec();
-	    let mut u_clone = u.clone();
-	    
-	    u_clone.inverse_dual_mut();
-	    assert_eq!(u.inverse_dual(), u_clone);
-	}
+            let v = rand_mvec();
 
-	#[test]
-	fn outer_product_test() {
-	    let u = rand_mvec();
-	    let mut u_clone = u.clone();
-	    
-	    let v = rand_mvec();
+            u_clone.outer_product_mut(v);
+            assert_eq!(u.outer_product(v), u_clone);
+        }
 
-	    u_clone.outer_product_mut(v);
-	    assert_eq!(u.outer_product(v), u_clone);
-	}
+        #[test]
+        fn inner_product_test() {
+            let u = rand_mvec();
+            let mut u_clone = u.clone();
 
-	#[test]
-	fn inner_product_test() {
-	    let u = rand_mvec();
-	    let mut u_clone = u.clone();
-	    
-	    let v = rand_mvec();
+            let v = rand_mvec();
 
-	    u_clone.inner_product_mut(v);
-	    assert_eq!(u.inner_product(v), u_clone);
-	}
+            u_clone.inner_product_mut(v);
+            assert_eq!(u.inner_product(v), u_clone);
+        }
     }
-
 
     #[cfg(test)]
     mod logic {
@@ -479,20 +393,23 @@ mod tests {
         }
 
         #[test]
-        fn inner_equals_inner_mut() {
+        fn sum_of_projections_is_self() {
             let u = rand_mvec();
-            let v = rand_mvec();
-            let mut u_clone = u.clone();
-            let mut v_clone = v.clone();
-            u_clone.inner_product_mut(v);
-            v_clone.inner_product_mut(u);
-            assert_eq!(u_clone, v_clone);
+            let u_0 = u.project(0);
+            let u_1 = u.project(1);
+            let u_2 = u.project(2);
+            assert_eq!(u_0 + u_1 + u_2, u);
         }
-	/*
-	#[test]
-	fn dual_inverse_dual_is_original() {
-	    let u = rand_mvec();
-	    assert_eq!(u.dual().inverse_dual(), u);
-	}*/
+        /*
+            #[test]
+            fn outer_product_is_difference() {
+                let u = rand_mvec();
+                let v = rand_mvec();
+                assert_eq!(
+                    u.geometric_product(v) - v.geometric_product(u),
+                    u.outer_product(v)
+                );
+        }
+        */
     }
 }
