@@ -1,6 +1,6 @@
 [package]
 name = "g_2_0_0"
-version = "0.4.1"
+version = "0.4.2"
 authors = ["FFFluoride"]
 edition = "2021"
 description = "A library to manipulate arbitrary object in the geometric algebra containing two perpendicular vectors that square to 1. Basically 2d VGA"
