@@ -80,7 +80,6 @@ where
         + Zero
         + Sub<Output = S>
         + One
-        + From<i16>
         + Pow<u8, Output = S>
         + Flt
         + PartialOrd,
@@ -97,10 +96,10 @@ where
     /// Convenient function to access the psuedoscalar in 2d vga
     pub fn ps() -> Self {
         Self {
-            scalar: 0.into(),
-            e1: 0.into(),
-            e2: 0.into(),
-            e12: 1.into(),
+            scalar: S::zero(),
+            e1: S::zero(),
+            e2: S::zero(),
+            e12: S::one(),
         }
     }
 
@@ -242,10 +241,10 @@ where
     /// Gets the maximum grade element above 0. There may be some imprecise floating point errors
     pub fn grade(&self) -> usize {
         let mut grade = 0;
-        if self.e1 > 0.into() || self.e2 > 0.into() {
+        if self.e1 > S::zero() || self.e2 > S::zero() {
             grade += 1;
         }
-        if self.e2 > 0.into() {
+        if self.e2 > S::zero() {
             grade += 1;
         }
         grade
@@ -315,11 +314,21 @@ where
     }
 
     pub fn round_components(self, dp: u8) -> Self {
+        let ten = S::one()
+            + S::one()
+            + S::one()
+            + S::one()
+            + S::one()
+            + S::one()
+            + S::one()
+            + S::one()
+            + S::one()
+            + S::one();
         Self {
-            scalar: (self.scalar * S::pow(10.into(), dp)).round() / S::pow(10.into(), dp),
-            e1: (self.e1 * S::pow(10.into(), dp)).round() / S::pow(10.into(), dp),
-            e2: (self.e2 * S::pow(10.into(), dp)).round() / S::pow(10.into(), dp),
-            e12: (self.e12 * S::pow(10.into(), dp)).round() / S::pow(10.into(), dp),
+            scalar: (self.scalar * S::pow(ten, dp)).round() / S::pow(ten, dp),
+            e1: (self.e1 * S::pow(ten, dp)).round() / S::pow(ten, dp),
+            e2: (self.e2 * S::pow(ten, dp)).round() / S::pow(ten, dp),
+            e12: (self.e12 * S::pow(ten, dp)).round() / S::pow(ten, dp),
         }
     }
 }
@@ -337,7 +346,6 @@ where
         + Sub<Output = S>
         + One
         + From<F>
-        + From<i16>
         + Flt
         + Pow<u8, Output = S>
         + PartialOrd,
