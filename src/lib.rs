@@ -216,6 +216,23 @@ where
         }
     }
 
+    pub fn geometric_product_swapped_mut(self, rhs: &mut Self) {
+        let a = self.scalar;
+        let b = self.e1;
+        let c = self.e2;
+        let d = self.e12;
+        let e = rhs.scalar;
+        let f = rhs.e1;
+        let g = rhs.e2;
+        let h = rhs.e12;
+        *rhs = Self {
+            scalar: (a * e) + (b * f) + (c * g) - (d * h),
+            e1: (a * f) + (b * e) - (c * h) + (d * g),
+            e2: (a * g) + (b * h) + (c * e) - (d * f),
+            e12: (a * h) + (b * g) - (c * f) + (d * e),
+        }
+    }
+
     /// Gets the maximum grade element that =/= 0. There may be some imprecise floating point errors
     pub fn grade(&self) -> usize {
         let mut grade = 0;
@@ -251,10 +268,43 @@ where
         self.geometric_product_mut(rhs);
         self.project_mut(grade1.abs_diff(grade2))
     }
+
+    pub fn versor_inverse(self) -> Self {
+        self.reverse()
+            .scale(S::one() / self.geometric_product(self.reverse()).scalar)
+    }
+
+    pub fn versor_inverse_mut(&mut self) {
+        let self_clone = *self;
+        self.reverse_mut();
+        self.scale_mut(S::one() / self_clone.geometric_product(self_clone.reverse()).scalar);
+    }
+
+    pub fn versor_dual(self) -> Self {
+        self.versor_inverse().geometric_product(Self::ps())
+    }
+
+    pub fn versor_dual_mut(&mut self) {
+        self.versor_inverse_mut();
+        self.geometric_product_mut(Self::ps());
+    }
+
+    pub fn versor_inverse_dual(self) -> Self {
+        Self::ps().geometric_product(self.versor_inverse())
+    }
+
+    pub fn versor_inverse_dual_mut(&mut self) {
+        self.versor_inverse_mut();
+        Self::ps().geometric_product_swapped_mut(self);
+    }
+
     /// Magnitude is sometimes negative in GA so the magintude sqaured is more useful. This function doesn't have a mut version because I think that would be weird.
     pub fn magnitude_squared(self) -> S {
         self.geometric_product(self.reverse()).scalar
     }
+    /*
+    pub fn fair_cmp() {}
+    */
 }
 
 /// The exponential of the 2d psuedoscalar squares to -1 so it is also i. This means we can use eulers formula. Also if you multiply a vector on the left and right by the exponential of angle in 2d, rotates the vector anticlockwise by double the angle.
@@ -279,7 +329,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::MultiVector;
+    use super::*;
     use rand::prelude::*;
     /// Generates a random multivector for testing
     fn rand_mvec() -> MultiVector<f32> {
@@ -291,16 +341,30 @@ mod tests {
             e12: rng.gen(),
         }
     }
+
+    fn rand_versor() -> MultiVector<f32> {
+        rand_mvec().project(1)
+    }
+
+    fn fair_versor() -> MultiVector<f32> {
+        if rand::random() {
+            rand_mvec().project(1)
+        } else {
+            rand_mvec()
+                .project(1)
+                .geometric_product(rand_mvec().project(1))
+        }
+    }
+
     /// Testing for parity between the mut and non-mut versions of functions
     #[cfg(test)]
     mod parity {
-        use super::rand_mvec;
-        use rand::prelude::*;
+        use super::*;
 
         #[test]
         fn scale_test() {
             let m = rand_mvec();
-            let mut m_clone = m.clone();
+            let mut m_clone = m;
 
             let mut rng = thread_rng();
             let scalar: f32 = rng.gen();
@@ -313,14 +377,14 @@ mod tests {
         fn project_test() {
             for scalar in 0..2 {
                 let m = rand_mvec();
-                let mut m_clone = m.clone();
+                let mut m_clone = m;
 
                 m_clone.project_mut(scalar);
                 assert_eq!(m.project(scalar), m_clone);
             }
             let scalar: usize = thread_rng().gen();
             let m = rand_mvec();
-            let mut m_clone = m.clone();
+            let mut m_clone = m;
             m_clone.project_mut(scalar);
             assert_eq!(m.project(scalar), m_clone);
         }
@@ -328,7 +392,7 @@ mod tests {
         #[test]
         fn reverse_test() {
             let m = rand_mvec();
-            let mut m_clone = m.clone();
+            let mut m_clone = m;
             m_clone.reverse_mut();
             assert_eq!(m.reverse(), m_clone);
         }
@@ -336,7 +400,7 @@ mod tests {
         #[test]
         fn geometric_product_test() {
             let u = rand_mvec();
-            let mut u_clone = u.clone();
+            let mut u_clone = u;
 
             let v = rand_mvec();
 
@@ -347,7 +411,7 @@ mod tests {
         #[test]
         fn outer_product_test() {
             let u = rand_mvec();
-            let mut u_clone = u.clone();
+            let mut u_clone = u;
 
             let v = rand_mvec();
 
@@ -358,19 +422,52 @@ mod tests {
         #[test]
         fn inner_product_test() {
             let u = rand_mvec();
-            let mut u_clone = u.clone();
+            let mut u_clone = u;
 
             let v = rand_mvec();
 
             u_clone.inner_product_mut(v);
             assert_eq!(u.inner_product(v), u_clone);
         }
+
+        #[test]
+        fn versor_dual_test() {
+            let u = fair_versor();
+
+            let mut u_clone = u;
+            u_clone.versor_dual_mut();
+
+            assert_eq!(u.versor_dual(), u_clone);
+        }
+
+        #[test]
+        fn geometric_product_swapped_test() {
+            let u = rand_mvec();
+            let v = rand_mvec();
+
+            let mut u_clone = u;
+            let mut v_clone = v;
+            u.geometric_product_swapped_mut(&mut v_clone);
+            u_clone.geometric_product_mut(v);
+
+            assert_eq!(u_clone, v_clone);
+        }
+
+        #[test]
+        fn versor_inverse_dual_test() {
+            let u = fair_versor();
+
+            let mut u_clone = u;
+            u_clone.versor_inverse_dual_mut();
+
+            assert_eq!(u.versor_inverse_dual(), u_clone);
+        }
     }
 
     #[cfg(test)]
     mod logic {
         //! Testing for consistent results of operations
-        use super::rand_mvec;
+        use super::*;
 
         #[test]
         fn reverse_twice() {
@@ -400,16 +497,23 @@ mod tests {
             let u_2 = u.project(2);
             assert_eq!(u_0 + u_1 + u_2, u);
         }
-        /*
-            #[test]
-            fn outer_product_is_difference() {
-                let u = rand_mvec();
-                let v = rand_mvec();
-                assert_eq!(
-                    u.geometric_product(v) - v.geometric_product(u),
-                    u.outer_product(v)
-                );
+
+        #[test]
+        fn versor_inverse_odd() {
+            let u = fair_versor();
+            assert!(f32::abs(u.geometric_product(u.versor_inverse()).scalar) - 1f32 < 0.01);
         }
-        */
+
+        #[test]
+        fn versor_inverse_even() {
+            let prod = fair_versor().geometric_product(rand_versor());
+            assert!(f32::abs(prod.geometric_product(prod.versor_inverse()).scalar - 1f32) < 0.01);
+        }
+
+        #[test]
+        fn versor_dual_inverse_dual_is_original() {
+            let u = fair_versor();
+            assert_eq!(u.versor_dual().versor_inverse_dual(), u);
+        }
     }
 }
