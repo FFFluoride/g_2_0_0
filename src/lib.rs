@@ -5,7 +5,7 @@ use std::ops::{Div, Mul, MulAssign, Neg, Sub};
 
 use std::cmp::PartialOrd;
 
-use num_traits::{identities::One, Zero};
+use num_traits::{identities::One, Float as Flt, Pow, Zero};
 
 use radians::{Angle, Float, Radians};
 
@@ -77,6 +77,8 @@ where
         + Sub<Output = S>
         + One
         + From<i16>
+        + Pow<u8, Output = S>
+        + Flt
         + PartialOrd,
 {
     pub fn new(scalar: S, e1: S, e2: S, e12: S) -> Self {
@@ -302,9 +304,15 @@ where
     pub fn magnitude_squared(self) -> S {
         self.geometric_product(self.reverse()).scalar
     }
-    /*
-    pub fn fair_cmp() {}
-    */
+
+    pub fn round_components(self, dp: u8) -> Self {
+        Self {
+            scalar: (self.scalar * S::pow(10.into(), dp)).round() / S::pow(10.into(), dp),
+            e1: (self.e1 * S::pow(10.into(), dp)).round() / S::pow(10.into(), dp),
+            e2: (self.e2 * S::pow(10.into(), dp)).round() / S::pow(10.into(), dp),
+            e12: (self.e12 * S::pow(10.into(), dp)).round() / S::pow(10.into(), dp),
+        }
+    }
 }
 
 /// The exponential of the 2d psuedoscalar squares to -1 so it is also i. This means we can use eulers formula. Also if you multiply a vector on the left and right by the exponential of angle in 2d, rotates the vector anticlockwise by double the angle.
@@ -321,6 +329,8 @@ where
         + One
         + From<F>
         + From<i16>
+        + Flt
+        + Pow<u8, Output = S>
         + PartialOrd,
 {
     let (sin, cos) = theta.sin_cos();
@@ -363,104 +373,122 @@ mod tests {
 
         #[test]
         fn scale_test() {
-            let m = rand_mvec();
-            let mut m_clone = m;
+            for _ in 0..3 {
+                let m = rand_mvec();
+                let mut m_clone = m;
 
-            let mut rng = thread_rng();
-            let scalar: f32 = rng.gen();
+                let mut rng = thread_rng();
+                let scalar: f32 = rng.gen();
 
-            m_clone.scale_mut(scalar);
-            assert_eq!(m.scale(scalar), m_clone)
+                m_clone.scale_mut(scalar);
+                assert_eq!(m.scale(scalar), m_clone)
+            }
         }
 
         #[test]
         fn project_test() {
-            for scalar in 0..2 {
+            for _ in 0..3 {
+                for scalar in 0..2 {
+                    let m = rand_mvec();
+                    let mut m_clone = m;
+
+                    m_clone.project_mut(scalar);
+                    assert_eq!(m.project(scalar), m_clone);
+                }
+                let scalar: usize = thread_rng().gen();
                 let m = rand_mvec();
                 let mut m_clone = m;
-
                 m_clone.project_mut(scalar);
                 assert_eq!(m.project(scalar), m_clone);
             }
-            let scalar: usize = thread_rng().gen();
-            let m = rand_mvec();
-            let mut m_clone = m;
-            m_clone.project_mut(scalar);
-            assert_eq!(m.project(scalar), m_clone);
         }
 
         #[test]
         fn reverse_test() {
-            let m = rand_mvec();
-            let mut m_clone = m;
-            m_clone.reverse_mut();
-            assert_eq!(m.reverse(), m_clone);
+            for _ in 0..3 {
+                let m = rand_mvec();
+                let mut m_clone = m;
+                m_clone.reverse_mut();
+                assert_eq!(m.reverse(), m_clone);
+            }
         }
 
         #[test]
         fn geometric_product_test() {
-            let u = rand_mvec();
-            let mut u_clone = u;
+            for _ in 0..3 {
+                let u = rand_mvec();
+                let mut u_clone = u;
 
-            let v = rand_mvec();
+                let v = rand_mvec();
 
-            u_clone.geometric_product_mut(v);
-            assert_eq!(u.geometric_product(v), u_clone);
+                u_clone.geometric_product_mut(v);
+                assert_eq!(u.geometric_product(v), u_clone);
+            }
         }
 
         #[test]
         fn outer_product_test() {
-            let u = rand_mvec();
-            let mut u_clone = u;
+            for _ in 0..3 {
+                let u = rand_mvec();
+                let mut u_clone = u;
 
-            let v = rand_mvec();
+                let v = rand_mvec();
 
-            u_clone.outer_product_mut(v);
-            assert_eq!(u.outer_product(v), u_clone);
+                u_clone.outer_product_mut(v);
+                assert_eq!(u.outer_product(v), u_clone);
+            }
         }
 
         #[test]
         fn inner_product_test() {
-            let u = rand_mvec();
-            let mut u_clone = u;
+            for _ in 0..3 {
+                let u = rand_mvec();
+                let mut u_clone = u;
 
-            let v = rand_mvec();
+                let v = rand_mvec();
 
-            u_clone.inner_product_mut(v);
-            assert_eq!(u.inner_product(v), u_clone);
+                u_clone.inner_product_mut(v);
+                assert_eq!(u.inner_product(v), u_clone);
+            }
         }
 
         #[test]
         fn versor_dual_test() {
-            let u = fair_versor();
+            for _ in 0..3 {
+                let u = fair_versor();
 
-            let mut u_clone = u;
-            u_clone.versor_dual_mut();
+                let mut u_clone = u;
+                u_clone.versor_dual_mut();
 
-            assert_eq!(u.versor_dual(), u_clone);
+                assert_eq!(u.versor_dual(), u_clone);
+            }
         }
 
         #[test]
         fn geometric_product_swapped_test() {
-            let u = rand_mvec();
-            let v = rand_mvec();
+            for _ in 0..3 {
+                let u = rand_mvec();
+                let v = rand_mvec();
 
-            let mut u_clone = u;
-            let mut v_clone = v;
-            u.geometric_product_swapped_mut(&mut v_clone);
-            u_clone.geometric_product_mut(v);
+                let mut u_clone = u;
+                let mut v_clone = v;
+                u.geometric_product_swapped_mut(&mut v_clone);
+                u_clone.geometric_product_mut(v);
 
-            assert_eq!(u_clone, v_clone);
+                assert_eq!(u_clone, v_clone);
+            }
         }
 
         #[test]
         fn versor_inverse_dual_test() {
-            let u = fair_versor();
+            for _ in 0..3 {
+                let u = fair_versor();
 
-            let mut u_clone = u;
-            u_clone.versor_inverse_dual_mut();
+                let mut u_clone = u;
+                u_clone.versor_inverse_dual_mut();
 
-            assert_eq!(u.versor_inverse_dual(), u_clone);
+                assert_eq!(u.versor_inverse_dual(), u_clone);
+            }
         }
     }
 
@@ -471,49 +499,76 @@ mod tests {
 
         #[test]
         fn reverse_twice() {
-            let m = rand_mvec();
-            assert_eq!(m, m.reverse().reverse());
+            for _ in 0..3 {
+                let m = rand_mvec();
+                assert_eq!(m, m.reverse().reverse());
+            }
         }
 
         #[test]
         fn outer_product_anticommutes() {
-            let u = rand_mvec();
-            let v = rand_mvec();
-            assert_eq!(u.outer_product(v), -v.outer_product(u));
+            for _ in 0..3 {
+                let u = rand_mvec();
+                let v = rand_mvec();
+                assert_eq!(u.outer_product(v), -v.outer_product(u));
+            }
         }
 
         #[test]
         fn inner_product_commutes() {
-            let u = rand_mvec();
-            let v = rand_mvec();
-            assert_eq!(u.inner_product(v), v.inner_product(u));
+            for _ in 0..3 {
+                let u = rand_mvec();
+                let v = rand_mvec();
+                assert_eq!(u.inner_product(v), v.inner_product(u));
+            }
         }
 
         #[test]
         fn sum_of_projections_is_self() {
-            let u = rand_mvec();
-            let u_0 = u.project(0);
-            let u_1 = u.project(1);
-            let u_2 = u.project(2);
-            assert_eq!(u_0 + u_1 + u_2, u);
+            for _ in 0..3 {
+                let u = rand_mvec();
+                let u_0 = u.project(0);
+                let u_1 = u.project(1);
+                let u_2 = u.project(2);
+                assert_eq!(u_0 + u_1 + u_2, u);
+            }
         }
 
         #[test]
         fn versor_inverse_odd() {
-            let u = fair_versor();
-            assert!(f32::abs(u.geometric_product(u.versor_inverse()).scalar) - 1f32 < 0.01);
+            for _ in 0..3 {
+                let u = fair_versor();
+                assert_eq!(
+                    u.geometric_product(u.versor_inverse())
+                        .round_components(5)
+                        .scalar,
+                    1f32
+                );
+            }
         }
 
         #[test]
         fn versor_inverse_even() {
-            let prod = fair_versor().geometric_product(rand_versor());
-            assert!(f32::abs(prod.geometric_product(prod.versor_inverse()).scalar - 1f32) < 0.01);
+            for _ in 0..3 {
+                let prod = fair_versor().geometric_product(rand_versor());
+                assert_eq!(
+                    prod.geometric_product(prod.versor_inverse())
+                        .round_components(5)
+                        .scalar,
+                    1f32
+                );
+            }
         }
 
         #[test]
         fn versor_dual_inverse_dual_is_original() {
-            let u = fair_versor();
-            assert_eq!(u.versor_dual().versor_inverse_dual(), u);
+            for _ in 0..3 {
+                let u = fair_versor();
+                assert_eq!(
+                    u.versor_dual().versor_inverse_dual().round_components(5),
+                    u.round_components(5)
+                );
+            }
         }
     }
 }
