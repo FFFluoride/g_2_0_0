@@ -1,4 +1,8 @@
-//! Library made for ppputilising geometric algebra with only two basis vectors each squaring to 1.
+//! Library made for utilising geometric algebra with only two basis vectors each squaring to 1 or G(2, 0, 0) in common notation.
+//! The main object here is a multivector, however, there is also an exponential function allow the generation of Rotors in 2d if you prefer.
+//! This is a personal project of mine but I published it on crates in case someone finds it interesting.
+//! If you don't know about geometric algebra, check out this swift introduction: <https://youtu.be/60z_hpEAtD8?si=3R4PWa4RDw0soUXw>
+//! Also, vga refers to Vanilla Geometric Algebra
 
 use std::ops::Add;
 use std::ops::{Div, Mul, MulAssign, Neg, Sub};
@@ -9,7 +13,7 @@ use num_traits::{identities::One, Float as Flt, Pow, Zero};
 
 use radians::{Angle, Float, Radians};
 
-/// In 2D GA, Multivectors have 4 components
+/// In 2D vga, Multivectors have 4 components
 #[derive(Clone, Debug, Copy, PartialEq, PartialOrd, Hash, Eq, Ord)]
 pub struct MultiVector<S> {
     pub scalar: S,
@@ -90,6 +94,7 @@ where
         }
     }
 
+    /// Convenient function to access the psuedoscalar in 2d vga
     pub fn ps() -> Self {
         Self {
             scalar: 0.into(),
@@ -102,7 +107,6 @@ where
     // todo: Mul implementation using the geometric project
 
     pub fn scale(self, scalar: S) -> Self {
-        //! Fun fact: Multivectors are vectors because you can scale and add them
         Self {
             scalar: self.scalar * scalar,
             e1: self.e1 * scalar,
@@ -117,7 +121,7 @@ where
         self.e12 *= scalar;
     }
 
-    /// Grade projection is when you take only the elements of a multivector that is a certain grade. Scalars (or 0-Vectors) have grade 0. Vectors (or 1-Vectors) have grade 1. Bivectors (or 2-Vectors) have grade 2. In general K-Vectors have grade K.
+    /// Grade projection. This function returns only the elements of the given grade.
     pub fn project(self, grade: usize) -> Self {
         match grade {
             0 => Self {
@@ -171,7 +175,7 @@ where
         }
     }
 
-    /// This operation is distributive across addittion and involves reversing the order of products. e.g. reverse(abcd) = dcba. The reverse predictably changes the size of specifically graded elements. Grade => Swap | No Swap. 0 => No Swap. 1 => No Swap. 2 => Swap. 3 => Swap. 4 => No Swap. 5 => No Swap &c.
+    /// The reverse only negates the e12 component in 2d vga.
     pub fn reverse(self) -> Self {
         Self {
             scalar: self.scalar,
@@ -184,7 +188,7 @@ where
         self.e12 = -self.e12
     }
 
-    /// The Geometric product is distributive across addittion and is defined as: uv = 1/2(u.v + u^v). If you apply this rule and several others, in two dimensions, you get this formula for calculating the geometric product for arbitrary Multivectors in two dimensions. The Geometric product for vectors is particularly nice as it commutes when the vectors are parallel and anticommutes if they are perpendicular (this is more useful theoretically)
+    /// The Geometric product is distributive across addittion and is defined as: uv = 1/2(u.v + u^v), where u and v are vectors. The Geometric product for vectors commutes when the vectors are parallel and anticommutes when they are perpendicular
     pub fn geometric_product(self, rhs: Self) -> Self {
         let a = self.scalar;
         let b = self.e1;
@@ -217,7 +221,7 @@ where
             e12: (a * h) + (b * g) - (c * f) + (d * e),
         }
     }
-
+    /// Convenience function for the geometric product where the right hand side is a mutable reference
     pub fn geometric_product_swapped_mut(self, rhs: &mut Self) {
         let a = self.scalar;
         let b = self.e1;
@@ -235,7 +239,7 @@ where
         }
     }
 
-    /// Gets the maximum grade element that =/= 0. There may be some imprecise floating point errors
+    /// Gets the maximum grade element above 0. There may be some imprecise floating point errors
     pub fn grade(&self) -> usize {
         let mut grade = 0;
         if self.e1 > 0.into() || self.e2 > 0.into() {
@@ -246,7 +250,7 @@ where
         }
         grade
     }
-    /// The outer product is zero if the multivectors are parrallel across some space. If they are perpendicular it joins the two into a higher grade subspace. In general, the outer product of a j-vector and a k-vector the grade projection of the geometric product of the two into the j+k grade vector.
+    /// The outer product of a k-vector and a j-vector is a j+k-vector
     pub fn outer_product(self, rhs: Self) -> Self {
         let grade1 = self.grade();
         let grade2 = rhs.grade();
@@ -258,7 +262,7 @@ where
         self.geometric_product_mut(rhs);
         self.project_mut(grade1 + grade2)
     }
-    /// Contrary to the outer product, the product of the two vectors is projected into the absolute difference of the grades of the two multivectors
+    /// The inner product of a k-vector and a j-vector is a |j-k|-vector
     pub fn inner_product(self, rhs: Self) -> Self {
         let grade1 = self.grade();
         let grade2 = rhs.grade();
@@ -276,12 +280,17 @@ where
             .scale(S::one() / self.geometric_product(self.reverse()).scalar)
     }
 
+    /// A versor is the product of an arbitrary amount of vectors.
+    /// There is no arbitrary multivector inverse for 2d vga, however, there is a n inverse for versor in general
     pub fn versor_inverse_mut(&mut self) {
         let self_clone = *self;
         self.reverse_mut();
         self.scale_mut(S::one() / self_clone.geometric_product(self_clone.reverse()).scalar);
     }
 
+    /// a * dual(a) = e12.
+    /// The dual requires the multivector to have an inverse and not all 2d vga multivectors have an inverse but versors do, so this function only works for versors. For this function to work correctly, you must pass in a versor
+    /// A versors will either come in vector for or scalar + e12 form
     pub fn versor_dual(self) -> Self {
         self.versor_inverse().geometric_product(Self::ps())
     }
