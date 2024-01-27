@@ -250,7 +250,7 @@ where
         grade
     }
 
-    /// Helpful function that gets the scalar and e12 component of the multivector; getting the even subspace entails using the `.project(1)` function
+    /// Helpful function that gets the scalar and e12 component of the multivector; getting the even subspace entails using the `.project(1)` function, this also makes the multivector a versor.
     pub fn odd_subspace(&self) -> Self {
 	self.project(0).project(2)
     }
