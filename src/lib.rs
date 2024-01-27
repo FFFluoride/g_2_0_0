@@ -249,6 +249,17 @@ where
         }
         grade
     }
+
+    /// Helpful function that gets the scalar and e12 component of the multivector; getting the even subspace entails using the `.project(1)` function
+    pub fn odd_subspace(&self) -> Self {
+	self.project(0).project(2)
+    }
+
+    pub fn odd_subspace_mut(&mut self) {
+	self.project_mut(0);
+	self.project_mut(2);
+    }
+    
     /// The outer product of a k-vector and a j-vector is a j+k-vector
     pub fn outer_product(self, rhs: Self) -> Self {
         let grade1 = self.grade();
