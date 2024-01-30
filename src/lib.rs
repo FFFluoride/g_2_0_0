@@ -187,6 +187,16 @@ where
         self.e12 = -self.e12
     }
 
+    /// Hack for normalizing a vector
+    pub fn normalize_vector_part(self) -> Self {
+	self.project(1).scale(S::one() / (self.project(1).magnitude_squared().sqrt()))
+    }
+
+    pub fn normalize_vector_part_mut(&mut self) {
+	self.project_mut(1);
+	self.scale_mut(S::one() / (self.magnitude_squared().sqrt()));
+    }
+
     /// The Geometric product is distributive across addittion and is defined as: uv = 1/2(u.v + u^v), where u and v are vectors. The Geometric product for vectors commutes when the vectors are parallel and anticommutes when they are perpendicular
     pub fn geometric_product(self, rhs: Self) -> Self {
         let a = self.scalar;
@@ -518,6 +528,17 @@ mod tests {
                 assert_eq!(u.versor_inverse_dual(), u_clone);
             }
         }
+
+	#[test]
+	fn normalize_vector_part_test() {
+	    for _ in 0..3 {
+		let u = rand_mvec();
+		let mut u_clone = u.clone();
+		u_clone.normalize_vector_part_mut();
+
+		assert_eq!(u.normalize_vector_part(), u_clone);
+	    }
+	}
     }
 
     #[cfg(test)]
