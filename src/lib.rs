@@ -93,6 +93,11 @@ where
         }
     }
 
+    /// Convenient function for initialising an empty multivector
+    pub fn zero() -> Self {
+	MultiVector::new(S::zero(), S::zero(), S::zero(), S::zero())
+    }
+
     /// Convenient function to access the psuedoscalar in 2d vga
     pub fn ps() -> Self {
         Self {
