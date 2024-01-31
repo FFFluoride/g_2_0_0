@@ -4,8 +4,8 @@
 //! If you don't know about geometric algebra, check out this swift introduction: <https://youtu.be/60z_hpEAtD8?si=3R4PWa4RDw0soUXw>
 //! Also, vga refers to Vanilla Geometric Algebra
 
-use std::ops::Add;
-use std::ops::{Div, Mul, MulAssign, Neg, Sub};
+use std::ops::{MulAssign, AddAssign};
+use std::ops::{Div, Mul, Neg, Sub, Add};
 
 use std::cmp::PartialOrd;
 
@@ -20,6 +20,15 @@ pub struct MultiVector<S> {
     pub e1: S,
     pub e2: S,
     pub e12: S,
+}
+
+impl<S:AddAssign> AddAssign for MultiVector<S>{
+    fn add_assign(&mut self, other: Self) {
+	self.scalar += other.scalar;
+	self.e1 += other.e1;
+	self.e2 += other.e2;
+	self.e12 += other.e12;
+    }
 }
 
 impl<S> Add for MultiVector<S>
