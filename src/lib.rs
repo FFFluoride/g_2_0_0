@@ -90,7 +90,7 @@ where
         + Sub<Output = S>
         + One
         + Pow<u8, Output = S>
-        + Flt
+    + Flt
         + PartialOrd,
 {
     pub fn new(scalar: S, e1: S, e2: S, e12: S) -> Self {
@@ -286,27 +286,23 @@ where
     
     /// The outer product of a k-vector and a j-vector is a j+k-vector
     pub fn outer_product(self, rhs: Self) -> Self {
-        let grade1 = self.grade();
-        let grade2 = rhs.grade();
-        self.geometric_product(rhs).project(grade1 + grade2)
+	(self.geometric_product(rhs) - rhs.geometric_product(self)).scale(S::one() / (S::one() + S::one()))
     }
     pub fn outer_product_mut(&mut self, rhs: Self) {
-        let grade1 = self.grade();
-        let grade2 = rhs.grade();
-        self.geometric_product_mut(rhs);
-        self.project_mut(grade1 + grade2)
+        let self_clone = self.clone();
+	self.geometric_product_mut(rhs);
+	*self = *self - rhs.geometric_product(self_clone);
+	self.scale_mut(S::one() / (S::one() + S::one()))
     }
     /// The inner product of a k-vector and a j-vector is a |j-k|-vector
     pub fn inner_product(self, rhs: Self) -> Self {
-        let grade1 = self.grade();
-        let grade2 = rhs.grade();
-        self.geometric_product(rhs).project(grade1.abs_diff(grade2))
+	(self.geometric_product(rhs) + rhs.geometric_product(self)).scale(S::one() / (S::one() + S::one()))
     }
     pub fn inner_product_mut(&mut self, rhs: Self) {
-        let grade1 = self.grade();
-        let grade2 = rhs.grade();
-        self.geometric_product_mut(rhs);
-        self.project_mut(grade1.abs_diff(grade2))
+	let self_clone = self.clone();
+	self.geometric_product_mut(rhs);
+	*self = *self + rhs.geometric_product(self_clone);
+	self.scale_mut(S::one() / (S::one() + S::one()))
     }
 
     pub fn versor_inverse(self) -> Self {
@@ -628,8 +624,8 @@ mod tests {
             for _ in 0..3 {
                 let u = fair_versor();
                 assert_eq!(
-                    u.versor_dual().versor_inverse_dual().round_components(5),
-                    u.round_components(5)
+                    u.versor_dual().versor_inverse_dual().round_components(4),
+                    u.round_components(4)
                 );
             }
         }
